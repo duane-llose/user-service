@@ -1,0 +1,49 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+jobs:
+  claude-review:
+    if: github.actor != 'claude[bot]'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Bash(gh pr *)"'
+          prompt: |
+            You are an experienced senior software engineer performing a pull request review.
+            Keep the review concise and actionable.
+
+            Step 1: Run: gh pr diff ${{ github.event.pull_request.number }}
+            Step 2: Post review using: gh pr comment ${{ github.event.pull_request.number }} --body "..."
+
+            Only report issues related to:
+            - Security vulnerabilities
+            - Potential bugs
+            - Data loss risks
+            - Unhandled errors
+
+            Focus on issues that are likely to occur during normal application usage.
+            Do not speculate about unlikely race conditions, theoretical edge cases, or defensive improvements.
+            Only report issues when you have high confidence they are real.
+
+            If you do not identify any issues, post:
+            "LGTM. I did not identify any issues in this PR."
