@@ -10,9 +10,6 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Map;
 
 /**
@@ -32,15 +29,8 @@ public class TestRsaKeyEnvironmentPostProcessor implements EnvironmentPostProces
 
     private void writePrivateKeyPem() {
         try {
-            var generator = KeyPairGenerator.getInstance("RSA");
-            generator.initialize(2048);
-            var encoded = generator.generateKeyPair().getPrivate().getEncoded();
-            var body = Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.US_ASCII)).encodeToString(encoded);
-            var pem = "-----BEGIN PRIVATE KEY-----\n" + body + "\n-----END PRIVATE KEY-----\n";
             Files.createDirectories(KEY_PATH.getParent());
-            Files.writeString(KEY_PATH, pem, StandardCharsets.US_ASCII);
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("RSA not available", ex);
+            Files.writeString(KEY_PATH, TestRsaKeys.generatePrivateKeyPem(), StandardCharsets.US_ASCII);
         } catch (IOException ex) {
             throw new UncheckedIOException("Unable to write test RSA key", ex);
         }
